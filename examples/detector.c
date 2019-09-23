@@ -608,8 +608,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         printf("failed to open csv file");
         exit(EXIT_FAILURE);
     }
-    starttime=what_time_is_it_now();
     //load txt file
+    starttime=what_time_is_it_now();
     while(fgets(input,256,ptest)!=NULL){
         c++;
         find_replace(input,"\n","",input);
