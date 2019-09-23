@@ -1,0 +1,6 @@
+classes= 8
+train  = /home/popo/src/darknet/train.txt
+valid  = /home/popo/src/darknet/val.txt
+names = data/rdd.names
+backup = backup
+
