@@ -559,6 +559,29 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
 }
 
 
+void writetocsv(FILE *csvp,detection *dets,int num,char *filename,int imw,int imh,int thresh,int classes){
+    char row[256];
+    float prob;
+    int left,right,top,bot;
+    for (int i = 0; i < num; i++){
+        for (int j=0; j < classes; j++){
+            prob=dets[i].prob[j];
+            if(prob>thresh){
+            left  = (dets[i].bbox.x-dets[i].bbox.w/2.)*imw;
+            right = (dets[i].bbox.x+dets[i].bbox.w/2.)*imw;
+            top   = (dets[i].bbox.y-dets[i].bbox.h/2.)*imh;
+            bot   = (dets[i].bbox.y+dets[i].bbox.h/2.)*imh;
+                sprintf(row,"%s,%d,%1.4f,%d,%d,%d,%d",filename,j,prob,left,top,right,bot);
+                fwrite("",1,sizeof(row),csvp);
+                printf("%s\n",row);
+            }
+        }
+        
+    }
+    
+}
+
+
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -569,20 +592,28 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
-    double time;
+    double starttime,endtime;
     char buff[256];
     char *input = buff;
     float nms=.45;
-    while(1){
-        if(filename){
-            strncpy(input, filename, 256);
-        } else {
-            printf("Enter Image Path: ");
-            fflush(stdout);
-            input = fgets(input, 256, stdin);
-            if(!input) return;
-            strtok(input, "\n");
-        }
+    int c=0;
+    FILE *ptest;
+    FILE *csvp;
+    //open test txt
+    if((ptest=fopen("../darknet/test.txt","r"))==NULL){
+        printf("failed to open test file");
+        exit(EXIT_FAILURE);
+    }
+    if((csvp=fopen("result.csv","w"))==NULL){
+        printf("failed to open csv file");
+        exit(EXIT_FAILURE);
+    }
+    starttime=what_time_is_it_now();
+    //load txt file
+    while(fgets(input,256,ptest)!=NULL){
+        c++;
+        find_replace(input,"\n","",input);
+        printf("predict %s\n",input);
         image im = load_image_color(input,0,0);
         image sized = letterbox_image(im, net->w, net->h);
         //image sized = resize_image(im, net->w, net->h);
@@ -590,34 +621,24 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
         //resize_network(net, sized.w, sized.h);
         layer l = net->layers[net->n-1];
-
-
         float *X = sized.data;
-        time=what_time_is_it_now();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         int nboxes = 0;
         detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
         //printf("%d\n", nboxes);
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
-        draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+        //if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+        //draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+        writetocsv(csvp,dets,nboxes,input,im.w,im.h,thresh,l.classes);
         free_detections(dets, nboxes);
-        if(outfile){
-            save_image(im, outfile);
-        }
-        else{
-            save_image(im, "predictions");
-#ifdef OPENCV
-            make_window("predictions", 512, 512, 0);
-            show_image(im, "predictions", 0);
-#endif
-        }
 
         free_image(im);
         free_image(sized);
-        if (filename) break;
     }
+    fclose(ptest);
+    fclose(csvp);
+    endtime=what_time_is_it_now();
+    printf("%s: Predicted in %f seconds. FPS:\n", input, endtime-starttime,(endtime-starttime)/c);
 }
 
 /*
