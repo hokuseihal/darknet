@@ -559,27 +559,27 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
 }
 
 
-//void writetocsv(FILE *csvp,detection *dets,int num,char *filename,int imw,int imh,int thresh,int classes){
-//    char row[256];
-//    float prob;
-//    int left,right,top,bot;
-//    for (int i = 0; i < num; i++){
-//        for (int j=0; j < classes; j++){
-//            prob=dets[i].prob[j];
-//            if(prob>thresh){
-//            left  = (dets[i].bbox.x-dets[i].bbox.w/2.)*imw;
-//            right = (dets[i].bbox.x+dets[i].bbox.w/2.)*imw;
-//            top   = (dets[i].bbox.y-dets[i].bbox.h/2.)*imh;
-//            bot   = (dets[i].bbox.y+dets[i].bbox.h/2.)*imh;
-//                sprintf(row,"%s,%d,%1.4f,%d,%d,%d,%d",filename,j,prob,left,top,right,bot);
-//                fwrite("",1,sizeof(row),csvp);
-//                printf("%s\n",row);
-//            }
-//        }
-//        
-//    }
-//    
-//}
+void writetocsv(FILE *csvp,detection *dets,int num,char *filename,int imw,int imh,int thresh,int classes){
+    char row[256];
+    float prob;
+    int left,right,top,bot;
+    for (int i = 0; i < num; i++){
+        for (int j=0; j < classes; j++){
+            prob=dets[i].prob[j];
+            if(prob>thresh){
+            left  = (dets[i].bbox.x-dets[i].bbox.w/2.)*imw;
+            right = (dets[i].bbox.x+dets[i].bbox.w/2.)*imw;
+            top   = (dets[i].bbox.y-dets[i].bbox.h/2.)*imh;
+            bot   = (dets[i].bbox.y+dets[i].bbox.h/2.)*imh;
+                sprintf(row,"%s,%d,%1.4f,%d,%d,%d,%d",filename,j,prob,left,top,right,bot);
+                fwrite("",1,sizeof(row),csvp);
+                printf("%s\n",row);
+            }
+        }
+        
+    }
+    
+}
 
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
