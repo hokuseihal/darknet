@@ -587,6 +587,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
+    char *testfile=option_find_str(options,"valid","cfg/lit-test.txt");
 
     image **alphabet = load_alphabet();
     network *net = load_network(cfgfile, weightfile, 0);
