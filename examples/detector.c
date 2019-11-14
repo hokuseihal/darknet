@@ -588,7 +588,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
     char *testfile=option_find_str(options,"valid","cfg/lit-test.txt");
-
+    char *labelpath;
     image **alphabet = load_alphabet();
     network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
@@ -596,10 +596,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     double starttime,endtime;
     char buff[256];
     char *input = buff;
+    int *num_labels;
     float nms=.45;
     int c=0;
     FILE *ptest;
     FILE *csvp;
+    int resultmap[20][20]={};
+    int t_class;
+    int predict_class;
+    int sum[20];
     //open test txt
     if((ptest=fopen("../darknet/test.txt","r"))==NULL){
         printf("failed to open test file");
@@ -614,6 +619,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     while(fgets(input,256,ptest)!=NULL){
         c++;
         find_replace(input,"\n","",input);
+        labelpath=input;
+        find_replace(labelpath, "images", "labels", labelpath);
+        find_replace(labelpath, ".jpg", ".txt", labelpath);
+        find_replace(labelpath, ".png", ".txt", labelpath);
         printf("predict %s\n",input);
         image im = load_image_color(input,0,0);
         image sized = letterbox_image(im, net->w, net->h);
@@ -630,7 +639,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         //if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
         //draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
-        writetocsv(csvp,dets,nboxes,input,im.w,im.h,thresh,l.classes);
+        //read label
+        box_label *truth = read_boxes(labelpath, &num_labels);
+        predict_class=0;
+        resultmap[truth->id][predict_class]+=1;
         free_detections(dets, nboxes);
 
         free_image(im);
@@ -639,7 +651,24 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     fclose(ptest);
     fclose(csvp);
     endtime=what_time_is_it_now();
+    //show result
     printf("%s: Predicted in %f seconds. FPS:\n", input, endtime-starttime,(endtime-starttime)/c);
+    for (size_t i = 0; i < 20; i++)
+    {
+        for (size_t j = 0; j < 20; j++)
+        {
+            printf("%d ",resultmap[i][j]);
+            sum[i]+=resultmap[i][j];
+        }
+        printf("\n");
+        
+    }
+    for (size_t i = 0; i < 20; i++)
+    {
+        printf("%d_%d:%2.4f",i*5,(i+1)*5,resultmap[i][i]/sum[i]);
+    }
+    
+    
 }
 
 /*
